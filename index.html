@@ -732,7 +732,7 @@ html{scroll-behavior:smooth}
 })();
 /* Affiliate / campaign tracking: carry the URL parameters of this visit over to every booking (CTA) link and remember
    them in a first-party cookie for 90 days, so a later visit without parameters still credits the same affiliate.
-   Parameters in the current URL always replace the stored ones (last link wins). Tracking itself happens on the ticketing platform. */
+   Parameters in the current URL always replace the stored ones (last link wins), then are removed from the address bar. Tracking itself happens on the ticketing platform. */
 (function () {
   var CK = 'ccg_aff', DAYS = 90, MAX_PARAMS = 20;
   function readCookie() {
@@ -753,7 +753,15 @@ html{scroll-behavior:smooth}
     });
   } catch (e) {}
   var stored;
-  if (n > 0) { stored = fresh.toString(); writeCookie(stored); } else { stored = readCookie(); }
+  if (n > 0) {
+    stored = fresh.toString();
+    writeCookie(stored);
+    /* Once the cookie is safely saved, hide the parameters from the address bar (no reload needed). If cookies are blocked
+       the URL is left alone, so the parameters are not lost. */
+    if (readCookie() === stored && window.history && history.replaceState) {
+      try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {}
+    }
+  } else { stored = readCookie(); }
   if (stored) {
     var params = new URLSearchParams(stored);
     document.querySelectorAll('a[data-cta]').forEach(function (a) {
